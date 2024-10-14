@@ -2,6 +2,14 @@ from Crypto.PublicKey import ElGamal
 from Crypto.Random import get_random_bytes
 from Crypto.Random.random import randint
 from Crypto.Util.number import GCD
+from ecdsa import SigningKey, NIST256p, BadSignatureError
+import hashlib
+
+# There is nurse, doctor and lab assistant. The nurse takes info from user like name, gender, vital signs etc.
+# Encrypts and signs it and sends it to the doctor.
+# Doctor gets the information verifies it decrypts it and suggests lab tests and sends it to lab assistant.
+# lab assistant is able to see only lab tests and name of the patient
+
 
 # Key Generation
 key = ElGamal.generate(256, get_random_bytes)
@@ -42,20 +50,44 @@ def elgamal_decrypt(cipher_text, key):
     return (c2 * s_inv) % p
 
 
+# Generate Schnorr Keys
+private_key = SigningKey.generate(curve=NIST256p)  # Private key
+public_key = private_key.verifying_key  # Public key
+
+
+# Schnorr Sign
+def schnorr_sign(message, private_key):
+    message_hash = hashlib.sha256(message.encode()).digest()
+    signature = private_key.sign(message_hash, hashfunc=hashlib.sha256)
+    return signature
+
+
+# Schnorr Verify
+def schnorr_verify(message, signature, public_key):
+    try:
+        message_hash = hashlib.sha256(message.encode()).digest()
+        return public_key.verify(signature, message_hash, hashfunc=hashlib.sha256)
+    except BadSignatureError:
+        return False
+
+
 # Example usage
-message = "Hello, ElGamal!"
+name = input("Enter patient name: ")
+gender = input("Enter gender: ")
+vitals = input("Enter patient vitals: ")
+
+# message = f"Name: {name}, Gender: {gender}, Vitals: {vitals}"
+message = name + gender + vitals
+signed = schnorr_sign(message, private_key)
 message_int = string_to_int(message)
 cipher_text = elgamal_encrypt(message_int, key)
+
 decrypted_message_int = elgamal_decrypt(cipher_text, key)
 decrypted_message = int_to_string(decrypted_message_int)
+verify = schnorr_verify(decrypted_message, signed, public_key)
 
 print("Original message:", message)
+print("Digital signature: ", signed.hex())
 print("Encrypted message:", cipher_text)
 print("Decrypted message:", decrypted_message)
-
-"""
-Output:
-Original message: Hello, ElGamal!
-Encrypted message: (c1, c2)  # c1 and c2 will be large integers
-Decrypted message: Hello, ElGamal!
-"""
+print("Signature verify: ", verify)
