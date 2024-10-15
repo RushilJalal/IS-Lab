@@ -26,12 +26,19 @@ client_socket, addr = server_socket.accept()
 print(f"Connected to client: {addr}")
 
 # Send p, g, B to client
+# p - prime number
+# g - primitive root
+# B - server's public key
+
 client_socket.send(f"{p},{g},{B}".encode())
 
 # Receive client's public key A
 A = int(client_socket.recv(1024).decode())
 
 # Calculate shared secret
+# A - client's public key
+# b - server's private key
+
 shared_secret_server = pow(A, b, p)
 print(f"Server's Shared Secret: {shared_secret_server}")
 
