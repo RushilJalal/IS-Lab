@@ -52,6 +52,7 @@ class Server:
             doc_hash = received_data["hash"]
             timestamp = received_data["timestamp"]
 
+            # Print received data
             for key, value in received_data.items():
                 if isinstance(value, bytes):
                     print(f"{key}: {base64.b64encode(value).decode()}")
@@ -69,13 +70,13 @@ class Server:
                 log_entry = {
                     "timestamp": timestamp,
                     "encrypted_data": base64.b64encode(encrypted_data).decode(),
+                    "signature": base64.b64encode(signature).decode(),
+                    "public_key": public_key_pem.decode(),
                     "hash": base64.b64encode(doc_hash).decode(),
                 }
 
-                print(log_entry["encrypted_data"])
-                print(log_entry["hash"])
                 self.audit_log[timestamp] = log_entry
-                logging.info(f"New transaction logged: {timestamp}")
+                logging.info(f"Public key: {log_entry['public_key']}")
 
                 client_socket.send(b"Signature verified and data logged")
             else:
